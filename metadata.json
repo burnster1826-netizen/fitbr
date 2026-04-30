@@ -1,0 +1,6 @@
+{
+  "name": "Vigor AI Calorie Tracker",
+  "description": "A sleek, AI-powered fitness companion that calculates calories and macros from natural language inputs with secure user profiles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI Food Lookup", "User Authentication", "Macro Tracking"]
+}

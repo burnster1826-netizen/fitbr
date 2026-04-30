@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User settings and nutritional goals",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "dailyCalorieGoal": { "type": "number" },
+        "proteinGoal": { "type": "number" },
+        "carbGoal": { "type": "number" },
+        "fatGoal": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["displayName", "email", "dailyCalorieGoal"]
+    },
+    "FoodLog": {
+      "title": "Food Log Entry",
+      "description": "A single entry of food consumed",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "foodName": { "type": "string" },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "servingSize": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "dateStr": { "type": "string", "description": "YYYY-MM-DD for easy querying" }
+      },
+      "required": ["userId", "foodName", "calories", "timestamp", "dateStr"]
+    },
+    "FoodLibrary": {
+      "title": "Cached Food Item",
+      "description": "Global knowledge base of food nutritional info",
+      "type": "object",
+      "properties": {
+        "foodName": { "type": "string" },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "servingSize": { "type": "string" }
+      },
+      "required": ["foodName", "calories"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and goals"
+    },
+    "/logs/{logId}": {
+      "schema": "FoodLog",
+      "description": "Individual food entries for all users"
+    },
+    "/library/{foodId}": {
+      "schema": "FoodLibrary",
+      "description": "Global food lookup cache"
+    }
+  }
+}

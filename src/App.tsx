@@ -1,0 +1,405 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useEffect, useState } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from './lib/firebase';
+import { GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, getAdditionalUserInfo } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { UserProfile, DEFAULT_GOALS } from './types';
+import { LogIn, LogOut, Target, Loader2, Mail, Lock, UserPlus, ArrowLeft, Shield, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import Dashboard from './components/Dashboard';
+import UserNav from './components/UserNav';
+import ProfileModal from './components/ProfileModal';
+
+export default function App() {
+  const [user, loading, error] = useAuthState(auth);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'initial' | 'email-login' | 'email-signup'>('initial');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [sheetLoading, setSheetLoading] = useState(false);
+  const [sheetError, setSheetError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Auto-setup sheet if drive is connected but no sheetId
+    const setupSheet = async () => {
+      if (profile?.driveConnected && !profile.sheetId && googleAccessToken && !sheetLoading) {
+        setSheetLoading(true);
+        setSheetError(null);
+        try {
+          const { createNutritionSheet } = await import('./services/googleSheetsService');
+          const sheetId = await createNutritionSheet(googleAccessToken);
+          const profileRef = doc(db, 'users', profile.uid);
+          await updateDoc(profileRef, { sheetId });
+          setProfile({ ...profile, sheetId });
+        } catch (err: any) {
+          console.error("Sheet setup failed:", err);
+          setSheetError(err.message || "Failed to initialize Google Sheet. Please ensure the Sheets API is enabled.");
+        } finally {
+          setSheetLoading(false);
+        }
+      }
+    };
+    setupSheet();
+  }, [profile?.driveConnected, profile?.sheetId, googleAccessToken]);
+
+  const handleDisconnectDrive = async () => {
+    if (!user) return;
+    try {
+      const profileRef = doc(db, 'users', user.uid);
+      await updateDoc(profileRef, { 
+        driveConnected: false,
+        sheetId: null 
+      });
+      setProfile(prev => prev ? { ...prev, driveConnected: false, sheetId: undefined } : null);
+      setGoogleAccessToken(null);
+      setSheetError(null);
+    } catch (err: any) {
+      console.error("Error disconnecting drive:", err);
+    }
+  };
+
+  useEffect(() => {
+    async function fetchProfile() {
+      if (user) {
+        setProfileLoading(true);
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            setProfile({ uid: user.uid, ...docSnap.data() } as UserProfile);
+          } else {
+            const newProfile: UserProfile = {
+              uid: user.uid,
+              displayName: user.displayName || email.split('@')[0] || 'Fitness Fanatic',
+              email: user.email || email || '',
+              dailyCalorieGoal: DEFAULT_GOALS.calories,
+              proteinGoal: DEFAULT_GOALS.protein,
+              carbGoal: DEFAULT_GOALS.carbs,
+              fatGoal: DEFAULT_GOALS.fat
+            };
+            await setDoc(docRef, newProfile);
+            setProfile(newProfile);
+          }
+        } catch (err) {
+          console.error("Error fetching profile:", err);
+        } finally {
+          setProfileLoading(false);
+        }
+      } else {
+        setProfile(null);
+      }
+    }
+    fetchProfile();
+  }, [user, email]);
+
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/drive.file');
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setGoogleAccessToken(credential.accessToken);
+      }
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  const handleConnectDrive = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/drive.file');
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setGoogleAccessToken(credential.accessToken);
+        if (user) {
+          const profileRef = doc(db, 'users', user.uid);
+          await updateDoc(profileRef, { driveConnected: true });
+          setProfile(prev => prev ? { ...prev, driveConnected: true } : null);
+        }
+      }
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      if (authMode === 'email-signup') {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  const handleLogout = () => signOut(auth);
+
+  if (loading || (user && !profile)) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-[#F5F5F5] flex items-center justify-center font-sans">
+        <Loader2 className="w-8 h-8 animate-spin text-[#DFFF00]" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-[#F5F5F5] font-sans selection:bg-[#DFFF00] selection:text-black flex flex-col md:flex-row relative overflow-hidden">
+      {/* Cinematic Scanning Line */}
+      <motion.div 
+        initial={{ top: '-5%' }}
+        animate={{ top: '105%' }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        className="fixed left-0 right-0 h-px bg-[#DFFF00]/5 z-0 pointer-events-none shadow-[0_0_10px_rgba(223,255,0,0.1)]"
+      />
+
+      <aside className="hidden md:flex w-24 border-r border-white/5 flex-col items-center py-10 gap-12 bg-[#080808] shrink-0 sticky top-0 h-screen z-10">
+        <motion.div 
+          whileHover={{ rotate: 180 }}
+          transition={{ duration: 0.5 }}
+          className="w-12 h-12 bg-[#DFFF00] rounded-2xl flex items-center justify-center shadow-[0_0_20px_#DFFF00]/10"
+        >
+          <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center font-black text-xs">V</div>
+        </motion.div>
+        <nav className="flex flex-col gap-10 opacity-20 group">
+          <motion.div 
+            whileHover={{ opacity: 1, scale: 1.1 }}
+            className="w-6 h-6 border-[1.5px] border-[#F5F5F5] rounded-md cursor-pointer" 
+          />
+          <motion.div 
+            whileHover={{ opacity: 1, scale: 1.1 }}
+            className="w-6 h-6 border-[1.5px] border-[#F5F5F5] rounded-full cursor-pointer" 
+          />
+          <motion.div 
+            whileHover={{ opacity: 1, scale: 1.1 }}
+            className="w-6 h-6 border-[1.5px] border-[#F5F5F5] rotate-45 cursor-pointer" 
+          />
+        </nav>
+        <div className="mt-auto opacity-10 flex flex-col items-center gap-4">
+          <Shield className="w-4 h-4" />
+          <div className="h-20 w-px bg-white/20" />
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col relative z-10">
+        <header className="p-6 md:px-12 md:pt-12">
+          <div className="max-w-6xl mx-auto flex justify-between items-end">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex flex-col"
+            >
+              <h1 className="flex flex-col">
+                <span className="text-5xl md:text-7xl font-black tracking-tighter uppercase text-white leading-[0.9]">Vigor</span>
+                <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.5em] text-white/50 mt-1 ml-1">Dashboard</span>
+              </h1>
+            </motion.div>
+            
+            {user && profile && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-4"
+              >
+                <UserNav 
+                  profile={profile} 
+                  onLogout={handleLogout} 
+                  onOpenProfile={() => setIsProfileModalOpen(true)} 
+                />
+              </motion.div>
+            )}
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto w-full p-6 md:px-12 md:pb-12">
+          <AnimatePresence mode="wait">
+            {!user ? (
+              <motion.div 
+                key="login-ui"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="max-w-4xl mx-auto py-12 text-center"
+              >
+                {authMode === 'initial' ? (
+                  <div className="space-y-12">
+                    <div className="space-y-6">
+                      <motion.div 
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#DFFF00]/5 border border-[#DFFF00]/15 rounded-full"
+                      >
+                        <Zap className="w-3 h-3 text-[#DFFF00]" />
+                        <span className="text-[10px] text-[#DFFF00] font-bold uppercase tracking-[0.2em]">High Performance Nutrition Analysis</span>
+                      </motion.div>
+                      <h2 className="text-6xl sm:text-[9.5rem] font-medium tracking-tight leading-[0.8] uppercase flex flex-col items-center">
+                        PRECISION 
+                        <span className="flex items-center gap-4 text-[#DFFF00]">
+                          <span className="italic tracking-tighter">AI</span> FUEL
+                        </span>
+                      </h2>
+                    </div>
+                    
+                    <p className="max-w-2xl mx-auto text-neutral-500 text-xl leading-relaxed font-medium">
+                      Optimizing biological performance through high-fidelity data extraction and predictive modeling.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                      <button 
+                        onClick={handleGoogleLogin}
+                        className="group relative flex items-center justify-center gap-3 bg-[#DFFF00] text-black px-12 py-5 rounded-2xl font-bold hover:shadow-[0_0_40px_rgba(223,255,0,0.4)] transition-all active:scale-95 overflow-hidden"
+                      >
+                        <LogIn className="w-5 h-5" />
+                        <span className="uppercase tracking-widest text-xs">Authorize with Google</span>
+                      </button>
+                      <button 
+                        onClick={() => setAuthMode('email-login')}
+                        className="flex items-center justify-center gap-3 bg-[#111] border border-white/5 text-[#F5F5F5] px-12 py-5 rounded-2xl font-bold hover:bg-[#1A1A1A] transition-all hover:border-[#DFFF00]/20"
+                      >
+                        <Mail className="w-5 h-5 text-neutral-500" />
+                        <span className="uppercase tracking-widest text-xs">Standard Login</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-8 pt-12 max-w-2xl mx-auto border-t border-white/5 opacity-40">
+                      <div>
+                        <p className="text-xl font-bold tracking-tighter">01</p>
+                        <p className="text-[8px] uppercase tracking-widest font-bold">Extraction</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold tracking-tighter">02</p>
+                        <p className="text-[8px] uppercase tracking-widest font-bold">Analytics</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold tracking-tighter">03</p>
+                        <p className="text-[8px] uppercase tracking-widest font-bold">Optimization</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#0F0F0F] border border-[#1A1A1A] rounded-[3rem] p-12 text-left relative max-w-md mx-auto shadow-2xl">
+                    <button 
+                      onClick={() => { setAuthMode('initial'); setAuthError(''); }}
+                      className="absolute top-12 left-12 p-3 bg-[#050505] rounded-xl text-neutral-500 hover:text-[#DFFF00] hover:border-[#DFFF00]/20 border border-transparent transition-all"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="pt-16">
+                      <h3 className="text-3xl font-medium mb-3 tracking-tight">
+                        {authMode === 'email-login' ? 'Authentication Required' : 'Initialize System Member'}
+                      </h3>
+                      <p className="text-neutral-500 text-sm mb-10 leading-relaxed uppercase font-bold tracking-tight">
+                        Secure access gateway for performance monitoring.
+                      </p>
+
+                      <form onSubmit={handleEmailAuth} className="space-y-6">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#DFFF00]">Access Identifier</label>
+                          <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+                            <input 
+                              type="email" 
+                              required 
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="w-full bg-[#050505] border border-[#1A1A1A] rounded-xl px-12 py-4 focus:border-[#DFFF00] transition-all outline-none font-medium"
+                              placeholder="operator@vigor.net"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#DFFF00]">Security Key</label>
+                          <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+                            <input 
+                              type="password" 
+                              required 
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="w-full bg-[#050505] border border-[#1A1A1A] rounded-xl px-12 py-4 focus:border-[#DFFF00] transition-all outline-none font-medium"
+                              placeholder="••••••••"
+                            />
+                          </div>
+                        </div>
+
+                        {authError && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-[10px] font-bold uppercase tracking-widest"
+                          >
+                            ERROR_REPORT: {authError}
+                          </motion.div>
+                        )}
+
+                        <button className="w-full bg-[#DFFF00] text-black font-bold py-5 rounded-2xl hover:shadow-[0_0_20px_#DFFF00]/20 active:scale-95 transition-all mt-4 tracking-[0.2em] text-xs">
+                          {authMode === 'email-login' ? 'GRANT ACCESS' : 'CREATE INSTANCE'}
+                        </button>
+                      </form>
+
+                      <div className="mt-10 text-center">
+                        <button 
+                          onClick={() => setAuthMode(authMode === 'email-login' ? 'email-signup' : 'email-login')}
+                          className="text-[10px] text-neutral-500 hover:text-[#DFFF00] uppercase tracking-widest font-bold transition-colors"
+                        >
+                          {authMode === 'email-login' ? "New Operator? Initialize Profile" : "Existing Member? Authenticate"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="dashboard"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <Dashboard 
+                  profile={profile!} 
+                  googleAccessToken={googleAccessToken}
+                  onConnectDrive={handleConnectDrive}
+                  onProfileUpdate={(p) => setProfile(p)}
+                />
+                
+                <ProfileModal 
+                  profile={profile!}
+                  isOpen={isProfileModalOpen}
+                  onClose={() => setIsProfileModalOpen(false)}
+                  onUpdate={(p) => setProfile(p)}
+                  googleAccessToken={googleAccessToken}
+                  onConnectDrive={handleConnectDrive}
+                  onDisconnectDrive={handleDisconnectDrive}
+                  sheetLoading={sheetLoading}
+                  sheetError={sheetError}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
+    </div>
+  );
+}

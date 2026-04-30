@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- User Profile Rules ---
+    function isValidUser(data) {
+      return data.displayName is string && data.displayName.size() <= 100
+          && data.email is string && data.email.size() <= 100
+          && data.dailyCalorieGoal is number && data.dailyCalorieGoal >= 0
+          && data.proteinGoal is number && data.proteinGoal >= 0
+          && data.carbGoal is number && data.carbGoal >= 0
+          && data.fatGoal is number && data.fatGoal >= 0;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) 
+                    && isValidUser(request.resource.data)
+                    && request.resource.data.keys().hasAll(['displayName', 'email', 'dailyCalorieGoal'])
+                    && request.resource.data.keys().size() <= 10;
+      allow update: if isOwner(userId)
+                    && isValidUser(request.resource.data)
+                    // Ensure UID-linked fields are immutable
+                    && request.resource.data.email == resource.data.email;
+    }
+
+    // --- Food Log Rules ---
+    function isValidFoodLog(data) {
+      return data.userId == request.auth.uid
+          && data.foodName is string && data.foodName.size() <= 200
+          && data.calories is number && data.calories >= 0
+          && data.protein is number && data.protein >= 0
+          && data.carbs is number && data.carbs >= 0
+          && data.fat is number && data.fat >= 0
+          && data.timestamp is number
+          && data.dateStr is string && data.dateStr.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    match /logs/{logId} {
+      // Use read shorthand to cover both get and list
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+                    && isValidFoodLog(request.resource.data)
+                    && request.resource.data.keys().hasAll(['userId', 'foodName', 'calories', 'timestamp', 'dateStr'])
+                    && request.resource.data.keys().size() <= 12;
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && isValidFoodLog(request.resource.data)
+                    && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // --- Food Library Rules ---
+    function isValidLibraryItem(data) {
+      return data.foodName is string && data.foodName.size() <= 200
+          && data.calories is number && data.calories >= 0
+          && data.protein is number && data.protein >= 0
+          && data.carbs is number && data.carbs >= 0
+          && data.fat is number && data.fat >= 0;
+    }
+
+    match /library/{foodId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidLibraryItem(request.resource.data);
+    }
+  }
+}
