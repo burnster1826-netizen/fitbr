@@ -9,7 +9,7 @@ import { auth, db } from './lib/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { UserProfile, DEFAULT_GOALS } from './types';
-import { LogIn, LogOut, Target, Loader2, Mail, Lock, UserPlus, ArrowLeft, Shield, Zap } from 'lucide-react';
+import { LogIn, LogOut, Target, Loader2, Mail, Lock, UserPlus, ArrowLeft, Shield, Zap, LayoutDashboard, History, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Dashboard from './components/Dashboard';
 import UserNav from './components/UserNav';
@@ -201,7 +201,27 @@ export default function App() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col relative z-10">
+      {/* Bottom Navigation for Mobile */}
+      {user && profile && (
+        <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-[#080808]/90 backdrop-blur-xl border border-white/10 rounded-2xl z-50 flex items-center justify-around px-4 shadow-2xl">
+          <button 
+            className="flex flex-col items-center gap-1 text-[#DFFF00]"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[8px] font-bold uppercase tracking-widest">Feed</span>
+          </button>
+          <button 
+            className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors"
+            onClick={() => setIsProfileModalOpen(true)}
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[8px] font-bold uppercase tracking-widest">Profile</span>
+          </button>
+        </nav>
+      )}
+
+      <div className="flex-1 flex flex-col relative z-10 pb-24 md:pb-0">
         <header className="p-6 md:px-12 md:pt-12">
           <div className="max-w-6xl mx-auto flex justify-between items-end">
             <motion.div

@@ -235,19 +235,19 @@ export default function LogEntryForm({ userId, googleAccessToken, sheetId }: Log
           )}
         </div>
         
-        <div className="relative flex items-center bg-white/20 rounded-2xl p-4 border border-black/10 focus-within:bg-white/30 transition-all z-10">
-          <Search className="w-5 h-5 mr-3 text-black/40" />
+        <div className="relative flex items-center bg-white/20 rounded-2xl p-5 border border-black/10 focus-within:bg-white/30 truncate transition-all z-10">
+          <Search className="w-5 h-5 mr-3 text-black/40 shrink-0" />
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={step !== 'IDLE' || loading}
             placeholder="Search biological database..."
-            className="bg-transparent border-none outline-none text-black placeholder-black/40 flex-1 font-bold text-sm sm:text-base pr-12 focus:placeholder-transparent transition-all"
+            className="bg-transparent border-none outline-none text-black placeholder-black/40 flex-1 font-bold text-sm sm:text-base pr-20 focus:scale-[1.01] transition-transform"
           />
           <button
             type="submit"
             disabled={loading || !input.trim() || step !== 'IDLE'}
-            className="absolute right-2 bg-black text-white px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg"
+            className="absolute right-2 bg-black text-white px-6 py-3.5 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 shadow-lg min-h-[48px]"
           >
             VERIFY
           </button>

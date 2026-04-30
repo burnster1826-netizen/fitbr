@@ -64,33 +64,33 @@ export default function History({ profile, onBack }: HistoryProps) {
   });
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <button 
           onClick={onBack}
-          className="flex items-center gap-2 text-neutral-500 hover:text-[#DFFF00] transition-colors group"
+          className="flex items-center gap-2 text-neutral-500 hover:text-[#DFFF00] transition-colors group py-2"
         >
           <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="text-[10px] font-bold uppercase tracking-widest">Back to Today</span>
         </button>
-        <div className="flex bg-[#0F0F0F] border border-[#1A1A1A] rounded-full p-1">
+        <div className="flex bg-[#0F0F0F] border border-[#1A1A1A] rounded-2xl md:rounded-full p-1 w-full sm:w-auto">
           <button 
             onClick={() => setView('week')}
-            className={`px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'week' ? 'bg-[#DFFF00] text-black' : 'text-neutral-500 hover:text-white'}`}
+            className={`flex-1 sm:flex-none px-6 py-3 md:py-2 rounded-xl md:rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'week' ? 'bg-[#DFFF00] text-black' : 'text-neutral-500 hover:text-white'}`}
           >
             Past 7 Days
           </button>
           <button 
             onClick={() => setView('month')}
-            className={`px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'month' ? 'bg-[#DFFF00] text-black' : 'text-neutral-500 hover:text-white'}`}
+            className={`flex-1 sm:flex-none px-6 py-3 md:py-2 rounded-xl md:rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${view === 'month' ? 'bg-[#DFFF00] text-black' : 'text-neutral-500 hover:text-white'}`}
           >
             Past 30 Days
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-[#0F0F0F] border border-[#1A1A1A] rounded-[2rem] p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+        <div className="lg:col-span-2 bg-[#0F0F0F] border border-[#1A1A1A] rounded-[2rem] p-6 md:p-8">
           <div className="flex items-center gap-3 mb-8">
             <BarChart3 className="w-5 h-5 text-[#DFFF00]" />
             <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neutral-400">Caloric Consistency</h3>
@@ -144,22 +144,22 @@ export default function History({ profile, onBack }: HistoryProps) {
           </div>
         </div>
 
-        <div className="bg-[#0F0F0F] border border-[#1A1A1A] rounded-[2rem] p-8 flex flex-col justify-center gap-8">
+        <div className="bg-[#0F0F0F] border border-[#1A1A1A] rounded-[2rem] p-6 md:p-8 flex flex-col justify-center gap-6 md:gap-8">
           <div>
             <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Average Daily</p>
-            <p className="text-4xl font-medium tracking-tighter">
+            <p className="text-3xl md:text-4xl font-medium tracking-tighter">
               {Math.round(chartData.reduce((sum, d) => sum + d.calories, 0) / days).toLocaleString()}
               <span className="text-sm font-normal text-neutral-600 ml-2 italic">kcal</span>
             </p>
           </div>
           <div>
             <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Protein Focus</p>
-            <p className="text-4xl font-medium tracking-tighter">
+            <p className="text-3xl md:text-4xl font-medium tracking-tighter">
               {Math.round(chartData.reduce((sum, d) => sum + d.protein, 0) / days)}
               <span className="text-sm font-normal text-neutral-600 ml-2 italic">g/day</span>
             </p>
           </div>
-          <div className="pt-8 border-t border-[#1A1A1A]">
+          <div className="pt-6 md:pt-8 border-t border-[#1A1A1A]">
             <div className="flex items-center gap-2 text-[#DFFF00] mb-4">
               <TrendingUp className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Insights</span>

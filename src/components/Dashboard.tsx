@@ -91,7 +91,7 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
           }
         }
       }}
-      className="grid grid-cols-12 gap-8"
+      className="grid grid-cols-12 gap-4 md:gap-8"
     >
       {/* Overview Section */}
       <motion.div 
@@ -99,10 +99,10 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
           hidden: { opacity: 0, y: 20 },
           show: { opacity: 1, y: 0 }
         }}
-        className="col-span-12 lg:col-span-5 bg-[#0F0F0F] rounded-[2rem] p-8 border border-[#1A1A1A] flex flex-col items-center relative overflow-hidden group"
+        className="col-span-12 lg:col-span-5 bg-[#0F0F0F] rounded-[2rem] p-6 md:p-8 border border-[#1A1A1A] flex flex-col items-center relative overflow-hidden group"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#DFFF00]/5 blur-[60px] group-hover:bg-[#DFFF00]/10 transition-colors duration-500" />
-        <div className="flex justify-between items-center w-full mb-10">
+        <div className="flex justify-between items-center w-full mb-6 md:mb-10">
           <div>
             <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-[0.2em] mb-1">Status Report</p>
             <h3 className="text-xl font-medium tracking-tight">Active Optimization</h3>
@@ -112,13 +112,13 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
           </div>
         </div>
         
-        <div className="relative flex items-center justify-center mb-10">
-          <svg className="w-64 h-64 -rotate-90 filter drop-shadow-[0_0_20px_rgba(223,255,0,0.1)]">
-            <circle cx="128" cy="128" r={radius} stroke="#1A1A1A" strokeWidth="8" fill="transparent" strokeDasharray="4 4" />
+        <div className="relative flex items-center justify-center mb-6 md:mb-10 w-full">
+          <svg className="w-56 h-56 md:w-64 md:h-64 -rotate-90 filter drop-shadow-[0_0_20px_rgba(223,255,0,0.1)]">
+            <circle cx="50%" cy="50%" r="45%" stroke="#1A1A1A" strokeWidth="8" fill="transparent" strokeDasharray="4 4" />
             <motion.circle 
-              cx="128" 
-              cy="128" 
-              r={radius} 
+              cx="50%" 
+              cy="50%" 
+              r="45%" 
               stroke="#DFFF00" 
               strokeWidth="10" 
               fill="transparent" 
@@ -155,7 +155,7 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
       </motion.div>
 
       {/* Action Section */}
-      <div className="col-span-12 lg:col-span-7 flex flex-col gap-8">
+      <div className="col-span-12 lg:col-span-7 flex flex-col gap-4 md:gap-8">
         <motion.div 
           variants={{
             hidden: { opacity: 0, scale: 0.95 },
@@ -170,9 +170,9 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
             hidden: { opacity: 0, y: 20 },
             show: { opacity: 1, y: 0 }
           }}
-          className="bg-[#0F0F0F] rounded-[2rem] p-8 border border-[#1A1A1A] flex-1 flex flex-col"
+          className="bg-[#0F0F0F] rounded-[2rem] p-6 md:p-8 border border-[#1A1A1A] flex-1 flex flex-col"
         >
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-6 md:mb-8">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-[#DFFF00]/5 border border-[#DFFF00]/20 rounded-xl flex items-center justify-center text-[#DFFF00]">
                 <Activity className="w-5 h-5" />

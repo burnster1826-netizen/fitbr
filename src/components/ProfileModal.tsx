@@ -80,7 +80,7 @@ export default function ProfileModal({
               </button>
             </div>
 
-            <div className="flex flex-col lg:flex-row h-[60vh] lg:h-auto overflow-y-auto custom-scrollbar">
+            <div className="flex flex-col lg:flex-row h-[80vh] lg:h-auto overflow-y-auto custom-scrollbar">
               {/* Goals Form */}
               <motion.form 
                 initial="hidden"
@@ -93,7 +93,7 @@ export default function ProfileModal({
                   }
                 }}
                 onSubmit={handleSubmit} 
-                className="p-8 space-y-8 flex-1 border-b lg:border-b-0 lg:border-r border-[#1A1A1A]"
+                className="p-6 md:p-8 space-y-8 flex-1 border-b lg:border-b-0 lg:border-r border-[#1A1A1A]"
               >
                 <div className="space-y-6">
                   <motion.div 
@@ -109,7 +109,7 @@ export default function ProfileModal({
                     />
                   </motion.div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       { label: "Daily Fuel Cap", icon: <Flame className="w-3 h-3" />, value: formData.dailyCalorieGoal, key: 'dailyCalorieGoal', unit: 'kcal' },
                       { label: "Protein Target", icon: <Activity className="w-3 h-3" />, value: formData.proteinGoal, key: 'proteinGoal', unit: 'g' },
@@ -136,7 +136,7 @@ export default function ProfileModal({
                   variants={{ hidden: { opacity: 0, scale: 0.95 }, show: { opacity: 1, scale: 1 } }}
                   type="submit"
                   disabled={saving}
-                  className="w-full bg-[#DFFF00] text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(223,255,0,0.3)] active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full bg-[#DFFF00] text-black font-bold py-5 rounded-xl flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(223,255,0,0.3)] active:scale-95 transition-all disabled:opacity-50 min-h-[56px]"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? 'UPDATING SYSTEMS...' : 'SAVE CONFIGURATION'}
@@ -147,7 +147,7 @@ export default function ProfileModal({
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="p-8 space-y-8 flex-1 bg-[#0A0A0A]/50"
+                className="p-6 md:p-8 space-y-8 flex-1 bg-[#0A0A0A]/50"
               >
                 <div className="space-y-6">
                   <div>
@@ -262,7 +262,7 @@ function GoalInput({ label, value, onChange, unit, icon }: { label: string, valu
           type="number"
           value={value}
           onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-          className="w-full bg-[#050505] border border-[#1A1A1A] rounded-xl pl-4 pr-12 py-3 focus:border-[#DFFF00] outline-none transition-colors font-medium"
+          className="w-full bg-[#050505] border border-[#1A1A1A] rounded-xl pl-4 pr-12 py-4 focus:border-[#DFFF00] outline-none transition-colors font-medium min-h-[48px]"
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-neutral-600 uppercase">{unit}</span>
       </div>
