@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { UserProfile, FoodLogEntry } from '../types';
 import { format } from 'date-fns';
 import { syncDailyTotals } from '../services/googleSheetsService';
-import { Plus, Trash2, PieChart, Activity, Zap, Flame, History as HistoryIcon } from 'lucide-react';
+import { Plus, Trash2, PieChart, Activity, Zap, Flame, History as HistoryIcon, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LogEntryForm from './LogEntryForm';
 import History from './History';
@@ -22,13 +22,50 @@ interface DashboardProps {
 export default function Dashboard({ profile, googleAccessToken, onConnectDrive, onProfileUpdate, showHistory, setShowHistory }: DashboardProps) {
   const [logs, setLogs] = useState<FoodLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+
+  const isToday = selectedDate === todayStr;
+
+  const getSafeDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      return isNaN(d.getTime()) ? new Date() : d;
+    } catch {
+      return new Date();
+    }
+  };
+
+  const handleDatePickerClick = () => {
+    if (!dateInputRef.current) return;
+    try {
+      // Use showPicker if available, it's the most modern way to trigger it reliably
+      if (typeof dateInputRef.current.showPicker === 'function') {
+        dateInputRef.current.showPicker();
+      } else {
+        dateInputRef.current.click();
+      }
+    } catch (e) {
+      console.warn("Date picker trigger failed", e);
+      dateInputRef.current.click();
+    }
+  };
+
+  const formatLogTime = (timestamp: any) => {
+    try {
+      const d = timestamp?.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+      return format(d, 'HH:mm');
+    } catch {
+      return '--:--';
+    }
+  };
 
   useEffect(() => {
     const q = query(
       collection(db, 'logs'),
       where('userId', '==', profile.uid),
-      where('dateStr', '==', today),
+      where('dateStr', '==', selectedDate),
       orderBy('timestamp', 'desc')
     );
 
@@ -44,7 +81,7 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
     });
 
     return () => unsubscribe();
-  }, [profile.uid, today]);
+  }, [profile.uid, selectedDate]);
 
   const totals = logs.reduce((acc, curr) => ({
     calories: acc.calories + curr.calories,
@@ -60,7 +97,7 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
       // Step 7: Sync to Google Sheets if connected
       if (googleAccessToken && profile.sheetId) {
         try {
-          await syncDailyTotals(profile.uid, today, googleAccessToken, profile.sheetId);
+          await syncDailyTotals(profile.uid, selectedDate, googleAccessToken, profile.sheetId);
         } catch (sheetErr) {
           console.error("Sheets sync failed after deletion:", sheetErr);
         }
@@ -103,13 +140,73 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
         className="col-span-12 lg:col-span-5 bg-[#0F0F0F] rounded-[2rem] p-6 md:p-8 border border-[#1A1A1A] flex flex-col items-center relative overflow-hidden group"
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#DFFF00]/5 blur-[60px] group-hover:bg-[#DFFF00]/10 transition-colors duration-500" />
-        <div className="flex justify-between items-center w-full mb-6 md:mb-10">
-          <div>
-            <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-[0.2em] mb-1">Status Report</p>
-            <h3 className="text-xl font-medium tracking-tight">Active Optimization</h3>
+        <div className="flex flex-col w-full mb-6 relative">
+          <div className="flex justify-between items-start w-full relative">
+            <div className="space-y-0.5">
+              <p className="text-[8px] text-neutral-500 uppercase font-bold tracking-[0.2em]">Status Report</p>
+              <h3 className="text-xl font-bold tracking-tight text-white leading-tight">Active Optimization</h3>
+            </div>
+            
+            <AnimatePresence mode="wait">
+              {isToday ? (
+                <motion.div 
+                  key="live"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-1.5 px-2 py-1 bg-[#DFFF00]/10 border border-[#DFFF00]/20 rounded-lg"
+                >
+                  <div className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DFFF00] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#DFFF00]"></span>
+                  </div>
+                  <span className="text-[8px] font-bold text-[#DFFF00] tracking-widest uppercase">Live Feed</span>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="history"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-1 px-2 py-1 bg-neutral-900 border border-white/5 rounded-lg"
+                >
+                  <span className="text-[8px] font-bold text-neutral-400 tracking-widest uppercase">Archive State</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="bg-[#1A1A1A] px-4 py-1.5 rounded-full border border-[#2A2A2A]">
-            <p className="text-[10px] font-mono text-[#DFFF00] font-bold tracking-widest uppercase">{format(new Date(), 'dd.MMM.yy')}</p>
+          
+          <div className="mt-4 w-full flex justify-center">
+            <div 
+              onClick={handleDatePickerClick}
+              className="bg-[#050505] border border-white/10 rounded-xl relative overflow-hidden transition-all duration-300 group/date shadow-xl w-full max-w-[200px] cursor-pointer hover:border-[#DFFF00]/30"
+            >
+              <input 
+                ref={dateInputRef}
+                type="date" 
+                className="absolute inset-0 opacity-0 pointer-events-none"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+              <div className="flex items-center px-3 py-2 justify-between relative z-10 pointer-events-none">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-[#1A1A1A] border border-white/5 rounded-md flex items-center justify-center text-[#DFFF00] group-hover/date:border-[#DFFF00]/30 transition-colors">
+                    <Calendar className="w-3 h-3" />
+                  </div>
+                  <div className="flex flex-col items-start leading-none gap-0.5">
+                    <p className="text-[10px] font-mono font-bold text-white tracking-widest uppercase">
+                      {format(getSafeDate(selectedDate), 'dd.MMM.yy')}
+                    </p>
+                    <p className="text-[6px] font-bold text-neutral-600 tracking-[0.2em] uppercase">
+                      Temporal Unit
+                    </p>
+                  </div>
+                </div>
+                <div className="w-6 h-6 bg-[#DFFF00]/5 rounded-md flex items-center justify-center border border-transparent group-hover/date:border-[#DFFF00]/20 transition-all">
+                  <Activity className="w-2.5 h-2.5 text-[#DFFF00] opacity-30 group-hover/date:opacity-100 transition-all" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -163,7 +260,12 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
             show: { opacity: 1, scale: 1 }
           }}
         >
-          <LogEntryForm userId={profile.uid} googleAccessToken={googleAccessToken} sheetId={profile.sheetId} />
+          <LogEntryForm 
+            userId={profile.uid} 
+            googleAccessToken={googleAccessToken} 
+            sheetId={profile.sheetId} 
+            selectedDate={selectedDate === format(new Date(), 'yyyy-MM-dd') ? undefined : selectedDate}
+          />
         </motion.div>
 
         <motion.div 
@@ -222,7 +324,7 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
                         <div>
                           <p className="font-semibold text-base tracking-tight capitalize group-hover:text-[#DFFF00] transition-colors">{log.foodName}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-neutral-600 font-mono font-bold uppercase tracking-widest">{format(log.timestamp, 'HH:mm:ss')}</span>
+                            <span className="text-[10px] text-neutral-600 font-mono font-bold uppercase tracking-widest">{formatLogTime(log.timestamp)}</span>
                             <span className="w-1 h-1 rounded-full bg-neutral-800" />
                             <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">{log.servingSize}</span>
                           </div>

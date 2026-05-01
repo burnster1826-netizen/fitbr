@@ -12,11 +12,12 @@ interface LogEntryFormProps {
   userId: string;
   googleAccessToken: string | null;
   sheetId?: string;
+  selectedDate?: string;
 }
 
 type Step = 'IDLE' | 'SUGGESTIONS' | 'QUANTITY' | 'OPTIONS' | 'CONFIRM';
 
-export default function LogEntryForm({ userId, googleAccessToken, sheetId }: LogEntryFormProps) {
+export default function LogEntryForm({ userId, googleAccessToken, sheetId, selectedDate }: LogEntryFormProps) {
   const [step, setStep] = useState<Step>('IDLE');
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<FoodNutrition[]>([]);
@@ -136,11 +137,12 @@ export default function LogEntryForm({ userId, googleAccessToken, sheetId }: Log
 
   const finalizeLog = async (entry: FoodNutrition) => {
     try {
+      const logDate = selectedDate || format(new Date(), 'yyyy-MM-dd');
       await addDoc(collection(db, 'logs'), {
         userId,
         ...entry,
         timestamp: Date.now(),
-        dateStr: format(new Date(), 'yyyy-MM-dd')
+        dateStr: logDate
       });
 
       const libQuery = query(collection(db, 'library'), where('foodName', '==', entry.foodName.toLowerCase().trim()), limit(1));
@@ -155,7 +157,7 @@ export default function LogEntryForm({ userId, googleAccessToken, sheetId }: Log
       // Step 6: Sync to Google Sheets if connected
       if (googleAccessToken && sheetId) {
         try {
-          const dateStr = format(new Date(), 'yyyy-MM-dd');
+          const dateStr = selectedDate || format(new Date(), 'yyyy-MM-dd');
           await syncDailyTotals(userId, dateStr, googleAccessToken, sheetId);
         } catch (sheetErr) {
           console.error("Google Sheets sync failed:", sheetErr);
