@@ -15,11 +15,10 @@ interface DashboardProps {
   googleAccessToken: string | null;
   onConnectDrive: () => void;
   onProfileUpdate: (profile: UserProfile) => void;
-  showHistory: boolean;
-  setShowHistory: (show: boolean) => void;
+  onTabChange: (tab: 'FEED' | 'HISTORY' | 'PROFILE') => void;
 }
 
-export default function Dashboard({ profile, googleAccessToken, onConnectDrive, onProfileUpdate, showHistory, setShowHistory }: DashboardProps) {
+export default function Dashboard({ profile, googleAccessToken, onConnectDrive, onProfileUpdate, onTabChange }: DashboardProps) {
   const [logs, setLogs] = useState<FoodLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +39,6 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
   const handleDatePickerClick = () => {
     if (!dateInputRef.current) return;
     try {
-      // Use showPicker if available, it's the most modern way to trigger it reliably
       if (typeof dateInputRef.current.showPicker === 'function') {
         dateInputRef.current.showPicker();
       } else {
@@ -94,7 +92,6 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
     try {
       await deleteDoc(doc(db, 'logs', id));
       
-      // Step 7: Sync to Google Sheets if connected
       if (googleAccessToken && profile.sheetId) {
         try {
           await syncDailyTotals(profile.uid, selectedDate, googleAccessToken, profile.sheetId);
@@ -106,10 +103,6 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
       handleFirestoreError(err, OperationType.DELETE, `logs/${id}`);
     }
   };
-
-  if (showHistory) {
-    return <History profile={profile} onBack={() => setShowHistory(false)} />;
-  }
 
   const calPercentage = (totals.calories / profile.dailyCalorieGoal) * 100;
   const radius = 100;
@@ -141,10 +134,10 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
       >
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#DFFF00]/5 blur-[60px] group-hover:bg-[#DFFF00]/10 transition-colors duration-500" />
         <div className="flex flex-col w-full mb-6 relative">
-          <div className="flex justify-between items-start w-full relative">
+          <div className="flex justify-between items-start w-full relative mb-4">
             <div className="space-y-0.5">
-              <p className="text-[8px] text-neutral-500 uppercase font-bold tracking-[0.2em]">Status Report</p>
-              <h3 className="text-xl font-bold tracking-tight text-white leading-tight">Active Optimization</h3>
+              <p className="text-[9px] text-neutral-500 uppercase font-bold tracking-[0.2em]">Status Report</p>
+              <h3 className="text-2xl font-bold tracking-tight text-white leading-tight">Active Optimization</h3>
             </div>
             
             <AnimatePresence mode="wait">
@@ -154,13 +147,13 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-1.5 px-2 py-1 bg-[#DFFF00]/10 border border-[#DFFF00]/20 rounded-lg"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#DFFF00]/10 border border-[#DFFF00]/20 rounded-xl"
                 >
-                  <div className="relative flex h-1.5 w-1.5">
+                  <div className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#DFFF00] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#DFFF00]"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#DFFF00]"></span>
                   </div>
-                  <span className="text-[8px] font-bold text-[#DFFF00] tracking-widest uppercase">Live Feed</span>
+                  <span className="text-[9px] font-bold text-[#DFFF00] tracking-widest uppercase">Live Feed</span>
                 </motion.div>
               ) : (
                 <motion.div 
@@ -168,18 +161,18 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-1 px-2 py-1 bg-neutral-900 border border-white/5 rounded-lg"
+                  className="flex items-center gap-1.5 px-2 py-1.5 bg-neutral-900 border border-white/5 rounded-xl"
                 >
-                  <span className="text-[8px] font-bold text-neutral-400 tracking-widest uppercase">Archive State</span>
+                  <span className="text-[9px] font-bold text-neutral-400 tracking-widest uppercase">Archive</span>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
           
-          <div className="mt-4 w-full flex justify-center">
+          <div className="w-full flex justify-center">
             <div 
               onClick={handleDatePickerClick}
-              className="bg-[#050505] border border-white/10 rounded-xl relative overflow-hidden transition-all duration-300 group/date shadow-xl w-full max-w-[200px] cursor-pointer hover:border-[#DFFF00]/30"
+              className="bg-[#050505] border border-white/10 rounded-2xl relative overflow-hidden transition-all duration-300 group/date shadow-xl w-full max-w-[260px] cursor-pointer hover:border-[#DFFF00]/40"
             >
               <input 
                 ref={dateInputRef}
@@ -188,22 +181,22 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
-              <div className="flex items-center px-3 py-2 justify-between relative z-10 pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-[#1A1A1A] border border-white/5 rounded-md flex items-center justify-center text-[#DFFF00] group-hover/date:border-[#DFFF00]/30 transition-colors">
-                    <Calendar className="w-3 h-3" />
+              <div className="flex items-center px-4 py-3 justify-between relative z-10 pointer-events-none">
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 bg-[#1A1A1A] border border-white/5 rounded-xl flex items-center justify-center text-[#DFFF00] group-hover/date:border-[#DFFF00]/40 transition-colors">
+                    <Calendar className="w-4 h-4" />
                   </div>
-                  <div className="flex flex-col items-start leading-none gap-0.5">
-                    <p className="text-[10px] font-mono font-bold text-white tracking-widest uppercase">
+                  <div className="flex flex-col items-start leading-none gap-1">
+                    <p className="text-sm font-mono font-bold text-white tracking-[0.1em] uppercase">
                       {format(getSafeDate(selectedDate), 'dd.MMM.yy')}
                     </p>
-                    <p className="text-[6px] font-bold text-neutral-600 tracking-[0.2em] uppercase">
+                    <p className="text-[8px] font-bold text-neutral-600 tracking-[0.3em] uppercase">
                       Temporal Unit
                     </p>
                   </div>
                 </div>
-                <div className="w-6 h-6 bg-[#DFFF00]/5 rounded-md flex items-center justify-center border border-transparent group-hover/date:border-[#DFFF00]/20 transition-all">
-                  <Activity className="w-2.5 h-2.5 text-[#DFFF00] opacity-30 group-hover/date:opacity-100 transition-all" />
+                <div className="w-9 h-9 bg-[#DFFF00]/5 rounded-xl flex items-center justify-center border border-transparent group-hover/date:border-[#DFFF00]/20 transition-all">
+                  <Activity className="w-4 h-4 text-[#DFFF00] opacity-40 group-hover/date:opacity-100 transition-all" />
                 </div>
               </div>
             </div>
@@ -284,7 +277,7 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
             </div>
             <div className="hidden lg:block">
               <button 
-                onClick={() => setShowHistory(true)}
+                onClick={() => onTabChange('HISTORY')}
                 className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#DFFF00] hover:text-black text-neutral-400 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
               >
                 <HistoryIcon className="w-3 h-3" />

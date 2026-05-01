@@ -9,9 +9,11 @@ import { auth, db } from './lib/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { UserProfile, DEFAULT_GOALS } from './types';
-import { LogIn, LogOut, Target, Loader2, Mail, Lock, UserPlus, ArrowLeft, Shield, Zap, LayoutDashboard, History, User } from 'lucide-react';
+import { LogIn, LogOut, Target, Loader2, Mail, Lock, UserPlus, ArrowLeft, Shield, Zap, LayoutDashboard, History as HistoryIcon, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Dashboard from './components/Dashboard';
+import History from './components/History';
+import Profile from './components/Profile';
 import UserNav from './components/UserNav';
 import ProfileModal from './components/ProfileModal';
 import { cn } from './lib/utils';
@@ -26,7 +28,7 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [activeTab, setActiveTab] = useState<'FEED' | 'HISTORY' | 'PROFILE'>('FEED');
   const [sheetLoading, setSheetLoading] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
 
@@ -201,19 +203,36 @@ export default function App() {
         >
           <div className="w-6 h-6 bg-black rounded-lg flex items-center justify-center font-black text-xs">V</div>
         </motion.div>
-        <nav className="flex flex-col gap-10 opacity-20 group">
-          <motion.div 
-            whileHover={{ opacity: 1, scale: 1.1 }}
-            className="w-6 h-6 border-[1.5px] border-[#F5F5F5] rounded-md cursor-pointer" 
-          />
-          <motion.div 
-            whileHover={{ opacity: 1, scale: 1.1 }}
-            className="w-6 h-6 border-[1.5px] border-[#F5F5F5] rounded-full cursor-pointer" 
-          />
-          <motion.div 
-            whileHover={{ opacity: 1, scale: 1.1 }}
-            className="w-6 h-6 border-[1.5px] border-[#F5F5F5] rotate-45 cursor-pointer" 
-          />
+        <nav className="flex flex-col gap-8 group">
+          <button 
+            onClick={() => setActiveTab('FEED')}
+            className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+              activeTab === 'FEED' ? "bg-[#DFFF00]/10 text-[#DFFF00]" : "text-neutral-500 hover:text-white"
+            )}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('HISTORY')}
+            className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+              activeTab === 'HISTORY' ? "bg-[#DFFF00]/10 text-[#DFFF00]" : "text-neutral-500 hover:text-white"
+            )}
+          >
+            <HistoryIcon className="w-5 h-5" />
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('PROFILE')}
+            className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+              activeTab === 'PROFILE' ? "bg-[#DFFF00]/10 text-[#DFFF00]" : "text-neutral-500 hover:text-white"
+            )}
+          >
+            <User className="w-5 h-5" />
+          </button>
         </nav>
         <div className="mt-auto opacity-10 flex flex-col items-center gap-4">
           <Shield className="w-4 h-4" />
@@ -226,47 +245,47 @@ export default function App() {
         <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 bg-[#080808]/90 backdrop-blur-2xl border border-white/10 rounded-[2rem] z-50 flex items-center justify-around px-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <button 
             className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95"
-            onClick={() => { setShowHistory(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => { setActiveTab('FEED'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           >
-            {!showHistory && (
+            {activeTab === 'FEED' && (
               <motion.div 
                 layoutId="active-tab"
                 className="absolute inset-x-2 inset-y-2 bg-[#DFFF00]/10 rounded-2xl -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <LayoutDashboard className={cn("w-5 h-5 transition-colors", !showHistory ? "text-[#DFFF00]" : "text-neutral-500")} />
-            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", !showHistory ? "text-[#DFFF00]" : "text-neutral-500")}>Feed</span>
+            <LayoutDashboard className={cn("w-5 h-5 transition-colors", activeTab === 'FEED' ? "text-[#DFFF00]" : "text-neutral-500")} />
+            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", activeTab === 'FEED' ? "text-[#DFFF00]" : "text-neutral-500")}>Feed</span>
           </button>
           
           <button 
             className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95"
-            onClick={() => { setShowHistory(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onClick={() => { setActiveTab('HISTORY'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           >
-            {showHistory && (
+            {activeTab === 'HISTORY' && (
               <motion.div 
                 layoutId="active-tab"
                 className="absolute inset-x-2 inset-y-2 bg-[#DFFF00]/10 rounded-2xl -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <History className={cn("w-5 h-5 transition-colors", showHistory ? "text-[#DFFF00]" : "text-neutral-500")} />
-            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", showHistory ? "text-[#DFFF00]" : "text-neutral-500")}>History</span>
+            <HistoryIcon className={cn("w-5 h-5 transition-colors", activeTab === 'HISTORY' ? "text-[#DFFF00]" : "text-neutral-500")} />
+            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", activeTab === 'HISTORY' ? "text-[#DFFF00]" : "text-neutral-500")}>History</span>
           </button>
 
           <button 
             className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95"
-            onClick={() => setIsProfileModalOpen(true)}
+            onClick={() => { setActiveTab('PROFILE'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           >
-            {isProfileModalOpen && (
+            {activeTab === 'PROFILE' && (
               <motion.div 
                 layoutId="active-tab"
-                className="absolute inset-x-2 inset-y-2 bg-white/5 rounded-2xl -z-10"
+                className="absolute inset-x-2 inset-y-2 bg-[#DFFF00]/10 rounded-2xl -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <User className={cn("w-5 h-5 transition-colors", isProfileModalOpen ? "text-white" : "text-neutral-500")} />
-            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", isProfileModalOpen ? "text-white" : "text-neutral-500")}>Profile</span>
+            <User className={cn("w-5 h-5 transition-colors", activeTab === 'PROFILE' ? "text-[#DFFF00]" : "text-neutral-500")} />
+            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", activeTab === 'PROFILE' ? "text-[#DFFF00]" : "text-neutral-500")}>Profile</span>
           </button>
         </nav>
       )}
@@ -294,7 +313,7 @@ export default function App() {
                 <UserNav 
                   profile={profile} 
                   onLogout={handleLogout} 
-                  onOpenProfile={() => setIsProfileModalOpen(true)} 
+                  onOpenProfile={() => setActiveTab('PROFILE')} 
                 />
               </motion.div>
             )}
@@ -304,6 +323,7 @@ export default function App() {
         <main className="max-w-6xl mx-auto w-full p-6 md:px-12 md:pb-12">
           <AnimatePresence mode="wait">
             {!user ? (
+               // ... existing login UI ...
               <motion.div 
                 key="login-ui"
                 initial={{ opacity: 0, y: 20 }}
@@ -443,19 +463,40 @@ export default function App() {
               </motion.div>
             ) : (
               <motion.div
-                key="dashboard"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
               >
-                <Dashboard 
-                  profile={profile!} 
-                  googleAccessToken={googleAccessToken}
-                  onConnectDrive={handleConnectDrive}
-                  onProfileUpdate={(p) => setProfile(p)}
-                  showHistory={showHistory}
-                  setShowHistory={setShowHistory}
-                />
+                {activeTab === 'FEED' && (
+                  <Dashboard 
+                    profile={profile!} 
+                    googleAccessToken={googleAccessToken}
+                    onConnectDrive={handleConnectDrive}
+                    onProfileUpdate={(p) => setProfile(p)}
+                    onTabChange={setActiveTab}
+                  />
+                )}
+
+                {activeTab === 'HISTORY' && (
+                  <History 
+                    profile={profile!} 
+                    onBack={() => setActiveTab('FEED')} 
+                  />
+                )}
+
+                {activeTab === 'PROFILE' && (
+                  <Profile 
+                    profile={profile!}
+                    onLogout={handleLogout}
+                    onConnectDrive={handleConnectDrive}
+                    onDisconnectDrive={handleDisconnectDrive}
+                    sheetLoading={sheetLoading}
+                  />
+                )}
                 
+                {/* Still keep modal for desktop trigger if requested, but tabs are primary for mobile */}
                 <ProfileModal 
                   profile={profile!}
                   isOpen={isProfileModalOpen}

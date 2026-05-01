@@ -212,7 +212,7 @@ export default function LogEntryForm({ userId, googleAccessToken, sheetId, selec
         )}
       </AnimatePresence>
 
-      <form onSubmit={handleSearchSubmit} className="relative group bg-[#DFFF00] rounded-[2rem] p-6 shadow-2xl shadow-[#DFFF00]/10 overflow-hidden">
+      <form onSubmit={handleSearchSubmit} className="relative group bg-[#DFFF00] rounded-[2rem] p-6 shadow-2xl shadow-[#DFFF00]/10">
         {/* Decorative corner accents */}
         <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-black/10 rounded-tl-[2rem]" />
         
@@ -258,28 +258,38 @@ export default function LogEntryForm({ userId, googleAccessToken, sheetId, selec
         <AnimatePresence>
           {suggestions.length > 0 && (
             <motion.div 
-               initial={{ opacity: 0, y: -10, scale: 0.95 }}
+               initial={{ opacity: 0, y: 10, scale: 0.95 }}
                animate={{ opacity: 1, y: 0, scale: 1 }}
-               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-               className="absolute left-6 right-6 top-[calc(100%-1rem)] bg-[#0F0F0F] border border-[#1A1A1A] rounded-2xl p-2 z-50 shadow-2xl"
+               exit={{ opacity: 0, y: 10, scale: 0.95 }}
+               className="absolute left-0 right-0 top-[calc(100%+0.5rem)] bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-2 z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
             >
-              <div className="p-2 mb-1 border-b border-[#1A1A1A]">
-                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest">Database Matches</p>
+              <div className="px-3 py-2 mb-1 border-b border-white/5">
+                <p className="text-[8px] font-bold text-neutral-500 uppercase tracking-[0.2em]">Local Cache Matches</p>
               </div>
-              {suggestions.map((item, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectSuggestion(item)}
-                  className="w-full text-left p-3 hover:bg-[#DFFF00] hover:text-black rounded-xl transition-all flex justify-between items-center group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Database className="w-3 h-3 text-[#DFFF00] group-hover:text-black" />
-                    <span className="text-sm font-medium capitalize">{item.foodName}</span>
-                  </div>
-                  <Check className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              ))}
+              <div className="max-h-[240px] overflow-y-auto custom-scrollbar">
+                {suggestions.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(item)}
+                    className="w-full text-left px-3 py-3.5 hover:bg-[#DFFF00] hover:text-black rounded-xl transition-all flex justify-between items-center group mb-1 last:mb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-black/10">
+                        <Database className="w-3.5 h-3.5 text-[#DFFF00] group-hover:text-black" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold capitalize tracking-tight">{item.foodName}</span>
+                        <span className="text-[9px] opacity-60 font-medium">{item.calories} kcal / serving</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                      <Check className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
