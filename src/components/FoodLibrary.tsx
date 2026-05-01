@@ -21,19 +21,11 @@ export default function FoodLibrary({ userId, onClose }: FoodLibraryProps) {
   async function fetchUniqueFoods() {
     setLoading(true);
     try {
-      const q = query(collection(db, 'logs'), where('userId', '==', userId));
+      const q = query(collection(db, 'library'), where('userId', '==', userId));
       const snapshot = await getDocs(q);
-      const allLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FoodLogEntry));
+      const libraryFoods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FoodLogEntry));
       
-      const uniqueMap = new Map<string, FoodLogEntry>();
-      allLogs.forEach(log => {
-        const key = (log.foodName || '').toLowerCase().trim();
-        if (key && !uniqueMap.has(key)) {
-          uniqueMap.set(key, log);
-        }
-      });
-      
-      setFoods(Array.from(uniqueMap.values()).sort((a, b) => a.foodName.localeCompare(b.foodName)));
+      setFoods(libraryFoods.sort((a, b) => a.foodName.localeCompare(b.foodName)));
     } catch (err) {
       console.error("Failed to fetch food library", err);
     } finally {
@@ -48,19 +40,20 @@ export default function FoodLibrary({ userId, onClose }: FoodLibraryProps) {
   const handleDelete = async (foodName: string) => {
     setLoading(true);
     try {
-      // Find ALL instances with this name (case-insensitive search is hard in firestore, so we'll fetch all and filter or just delete the exact ones if that was the intent)
-      // To be safe and clean, we fetch all logs for the user again or reuse logs if we had them.
-      // For now, let's delete exact matches and common variations
-      const q = query(collection(db, 'logs'), where('userId', '==', userId), where('foodName', '==', foodName));
-      const snapshot = await getDocs(q);
-      
       const batch = writeBatch(db);
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      
+      // 1. Delete from library
+      const libQ = query(collection(db, 'library'), where('userId', '==', userId), where('foodName', '==', foodName.toLowerCase().trim()));
+      const libSnap = await getDocs(libQ);
+      libSnap.docs.forEach(d => batch.delete(d.ref));
+
+      // 2. Delete from logs
+      const logsQ = query(collection(db, 'logs'), where('userId', '==', userId), where('foodName', '==', foodName));
+      const logsSnap = await getDocs(logsQ);
+      logsSnap.docs.forEach(d => batch.delete(d.ref));
       
       await batch.commit();
-      setFoods(foods.filter(f => f.foodName !== foodName));
+      setFoods(foods.filter(f => f.foodName.toLowerCase() !== foodName.toLowerCase()));
       setDeletingFoodName(null);
     } catch (err) {
       console.error("Failed to delete food items", err);
@@ -75,18 +68,26 @@ export default function FoodLibrary({ userId, onClose }: FoodLibraryProps) {
     
     setIsSaving(true);
     try {
-      const q = query(collection(db, 'logs'), where('userId', '==', userId), where('foodName', '==', editingFood.foodName));
-      const snapshot = await getDocs(q);
-      
       const batch = writeBatch(db);
-      snapshot.docs.forEach((d) => {
-        batch.update(d.ref, {
-          calories: Number(editingFood.calories),
-          protein: Number(editingFood.protein),
-          carbs: Number(editingFood.carbs),
-          fat: Number(editingFood.fat),
-          servingSize: editingFood.servingSize
-        });
+      
+      const newNutrition = {
+        calories: Number(editingFood.calories),
+        protein: Number(editingFood.protein),
+        carbs: Number(editingFood.carbs),
+        fat: Number(editingFood.fat),
+        servingSize: editingFood.servingSize
+      };
+
+      // 1. Update library
+      const libQ = query(collection(db, 'library'), where('userId', '==', userId), where('foodName', '==', editingFood.foodName.toLowerCase().trim()));
+      const libSnap = await getDocs(libQ);
+      libSnap.docs.forEach(d => batch.update(d.ref, newNutrition));
+
+      // 2. Update historical logs
+      const logsQ = query(collection(db, 'logs'), where('userId', '==', userId), where('foodName', '==', editingFood.foodName));
+      const logsSnap = await getDocs(logsQ);
+      logsSnap.docs.forEach((d) => {
+        batch.update(d.ref, newNutrition);
       });
       
       await batch.commit();
