@@ -115,19 +115,19 @@ export async function createNutritionSheet(accessToken: string): Promise<string>
                       userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Calories (Total)' },
+                      userEnteredValue: { stringValue: 'Calories (Total daily)' },
                       userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Protein (Total)' },
+                      userEnteredValue: { stringValue: 'Protein (Total daily)' },
                       userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Carbs (Total)' },
+                      userEnteredValue: { stringValue: 'Carbs (Total daily)' },
                       userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Fats (Total)' },
+                      userEnteredValue: { stringValue: 'Fats (Total daily)' },
                       userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     }
                   ]

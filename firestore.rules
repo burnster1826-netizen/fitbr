@@ -70,7 +70,8 @@ service cloud.firestore {
 
     // --- Food Library Rules ---
     function isValidLibraryItem(data) {
-      return data.foodName is string && data.foodName.size() <= 200
+      return data.userId == request.auth.uid
+          && data.foodName is string && data.foodName.size() <= 200
           && data.calories is number && data.calories >= 0
           && data.protein is number && data.protein >= 0
           && data.carbs is number && data.carbs >= 0
@@ -78,8 +79,12 @@ service cloud.firestore {
     }
 
     match /library/{foodId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidLibraryItem(request.resource.data);
+      allow update: if isSignedIn() 
+                    && resource.data.userId == request.auth.uid
+                    && isValidLibraryItem(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }

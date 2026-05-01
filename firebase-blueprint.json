@@ -34,9 +34,10 @@
     },
     "FoodLibrary": {
       "title": "Cached Food Item",
-      "description": "Global knowledge base of food nutritional info",
+      "description": "User specific knowledge base of food nutritional info",
       "type": "object",
       "properties": {
+        "userId": { "type": "string" },
         "foodName": { "type": "string" },
         "calories": { "type": "number" },
         "protein": { "type": "number" },
@@ -44,7 +45,7 @@
         "fat": { "type": "number" },
         "servingSize": { "type": "string" }
       },
-      "required": ["foodName", "calories"]
+      "required": ["userId", "foodName", "calories"]
     }
   },
   "firestore": {
