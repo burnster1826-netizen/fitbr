@@ -5,13 +5,14 @@ import {
   Flame, Dumbbell, Pizza, Database, 
   ShieldCheck, Loader2, Zap, Cpu,
   Activity, Fingerprint, Globe, RefreshCcw,
-  Check, X
+  Check, X, Apple, ChevronRight
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { syncDailyTotals } from '../services/googleSheetsService';
+import FoodLibrary from './FoodLibrary';
 
 interface ProfileProps {
   profile: UserProfile;
@@ -33,6 +34,7 @@ export default function Profile({
   const [localProfile, setLocalProfile] = useState(profile);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [showLibrary, setShowLibrary] = useState(false);
 
   useEffect(() => {
     setLocalProfile(profile);
@@ -47,8 +49,16 @@ export default function Profile({
       await syncDailyTotals(profile.uid, today, googleAccessToken, profile.sheetId);
       setSyncStatus('success');
       setTimeout(() => setSyncStatus('idle'), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Manual sync failed:", err);
+      if (err.message?.includes('Requested entity was not found')) {
+        // Sheet was likely deleted. Clear it to trigger re-creation
+        try {
+          await updateDoc(doc(db, 'users', profile.uid), { sheetId: "" });
+        } catch (dbErr) {
+          console.error("Failed to clear stale sheetId", dbErr);
+        }
+      }
       setSyncStatus('error');
     } finally {
       setSyncing(false);
@@ -183,19 +193,31 @@ export default function Profile({
               </div>
               
               <button 
-                onClick={localProfile.driveConnected ? onDisconnectDrive : onConnectDrive}
+                onClick={() => {
+                  if (!googleAccessToken && localProfile.driveConnected) {
+                    onConnectDrive();
+                  } else if (localProfile.driveConnected) {
+                    onDisconnectDrive();
+                  } else {
+                    onConnectDrive();
+                  }
+                }}
                 disabled={sheetLoading}
                 className={cn(
                   "w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all",
-                  localProfile.driveConnected 
-                    ? "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white" 
-                    : "bg-[#DFFF00] text-black shadow-[0_0_20px_rgba(223,255,0,0.1)]"
+                  (!googleAccessToken && localProfile.driveConnected)
+                    ? "bg-[#DFFF00] text-black shadow-[0_0_20px_rgba(223,255,0,0.1)]"
+                    : localProfile.driveConnected 
+                      ? "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white" 
+                      : "bg-[#DFFF00] text-black shadow-[0_0_20px_rgba(223,255,0,0.1)]"
                 )}
               >
                 {sheetLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  localProfile.driveConnected ? "Disconnect" : "Initialize Link"
+                  (!googleAccessToken && localProfile.driveConnected) 
+                    ? "Re-Authorize" 
+                    : localProfile.driveConnected ? "Disconnect" : "Initialize Link"
                 )}
               </button>
             </div>
@@ -251,7 +273,40 @@ export default function Profile({
             )}
           </div>
         </div>
+
+        {/* Nutritional Library Section */}
+        <div className="bg-[#0F0F0F] border border-white/5 rounded-3xl p-6 md:p-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Apple className="w-3.5 h-3.5 text-[#DFFF00]" />
+            <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Biological Database</h3>
+          </div>
+          
+          <button 
+            onClick={() => setShowLibrary(true)}
+            className="w-full bg-black/40 border border-white/5 hover:border-[#DFFF00]/30 rounded-2xl p-5 flex items-center justify-between group transition-all"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-neutral-900 flex items-center justify-center text-neutral-400 group-hover:text-[#DFFF00] transition-colors">
+                <Apple className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-white">Nutritional Library</p>
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">View all logged food items and macros</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-neutral-700 group-hover:text-[#DFFF00] transition-colors" />
+          </button>
+        </div>
       </div>
+
+      <AnimatePresence>
+        {showLibrary && (
+          <FoodLibrary 
+            userId={profile.uid} 
+            onClose={() => setShowLibrary(false)} 
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

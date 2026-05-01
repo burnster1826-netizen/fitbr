@@ -184,6 +184,17 @@ export default function ProfileModal({
                               <ExternalLink className="w-4 h-4 text-[#DFFF00]" />
                               Access Data Stream
                             </a>
+                            
+                            {!googleAccessToken && (
+                              <button
+                                onClick={onConnectDrive}
+                                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#DFFF00] text-black rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-[0_0_15px_rgba(223,255,0,0.2)] mt-2"
+                              >
+                                <Cloud className="w-4 h-4" />
+                                Re-Authorize Sync
+                              </button>
+                            )}
+
                             <button
                               onClick={onDisconnectDrive}
                               className="w-full flex items-center justify-center gap-2 px-6 py-3 text-red-500/50 hover:text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all mt-2"

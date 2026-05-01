@@ -31,19 +31,42 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'FEED' | 'HISTORY' | 'PROFILE'>('FEED');
   const [sheetLoading, setSheetLoading] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
+  const [isAuthInProgress, setIsAuthInProgress] = useState(false);
 
   useEffect(() => {
-    // Auto-setup sheet if drive is connected but no sheetId
+    // Auto-setup sheet if drive is connected
     const setupSheet = async () => {
-      if (profile?.driveConnected && !profile.sheetId && googleAccessToken && !sheetLoading) {
+      if (profile?.driveConnected && googleAccessToken && !sheetLoading) {
         setSheetLoading(true);
         setSheetError(null);
         try {
-          const { createNutritionSheet } = await import('./services/googleSheetsService');
-          const sheetId = await createNutritionSheet(googleAccessToken);
-          const profileRef = doc(db, 'users', profile.uid);
-          await updateDoc(profileRef, { sheetId });
-          setProfile({ ...profile, sheetId });
+          const { createNutritionSheet, findExistingSheet, checkSheetExists } = await import('./services/googleSheetsService');
+          
+          let sheetId = profile.sheetId;
+
+          // Verify if sheetId is valid if we have one
+          if (sheetId) {
+            const exists = await checkSheetExists(googleAccessToken, sheetId);
+            if (!exists) {
+              sheetId = ""; // Mark as missing
+            }
+          }
+
+          // Check if we need to find or create new
+          const existingIdByName = await findExistingSheet(googleAccessToken);
+          
+          if (existingIdByName) {
+            sheetId = existingIdByName;
+          } else if (!sheetId) {
+            // Only create if we neither have one nor found one by name
+            sheetId = await createNutritionSheet(googleAccessToken);
+          }
+
+          if (sheetId !== profile.sheetId) {
+            const profileRef = doc(db, 'users', profile.uid);
+            await updateDoc(profileRef, { sheetId });
+            setProfile({ ...profile, sheetId });
+          }
         } catch (err: any) {
           console.error("Sheet setup failed:", err);
           setSheetError(err.message || "Failed to initialize Google Sheet. Please ensure the Sheets API is enabled.");
@@ -107,6 +130,8 @@ export default function App() {
   }, [user, email]);
 
   const handleGoogleLogin = async () => {
+    if (isAuthInProgress) return;
+    setIsAuthInProgress(true);
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.file');
     provider.addScope('https://www.googleapis.com/auth/spreadsheets');
@@ -122,13 +147,17 @@ export default function App() {
         setAuthError('Google Sign-In is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
       } else if (err.code === 'auth/unauthorized-domain') {
         setAuthError(`This domain (${window.location.hostname}) is not authorized for Firebase Authentication. Please add it to the "Authorized domains" list in the Firebase Console (Authentication > Settings).`);
-      } else {
+      } else if (err.code !== 'auth/popup-closed-by-user') {
         setAuthError(err.message);
       }
+    } finally {
+      setIsAuthInProgress(false);
     }
   };
 
   const handleConnectDrive = async () => {
+    if (isAuthInProgress) return;
+    setIsAuthInProgress(true);
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.file');
     provider.addScope('https://www.googleapis.com/auth/spreadsheets');
@@ -149,9 +178,11 @@ export default function App() {
         setAuthError('Google Sign-In is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
       } else if (err.code === 'auth/unauthorized-domain') {
         setAuthError(`This domain (${window.location.hostname}) is not authorized for Firebase Authentication. Please add it to the "Authorized domains" list in the Firebase Console (Authentication > Settings).`);
-      } else {
+      } else if (err.code !== 'auth/popup-closed-by-user') {
         setAuthError(err.message);
       }
+    } finally {
+      setIsAuthInProgress(false);
     }
   };
 
@@ -493,7 +524,7 @@ export default function App() {
                     onLogout={handleLogout}
                     onConnectDrive={handleConnectDrive}
                     onDisconnectDrive={handleDisconnectDrive}
-                    sheetLoading={sheetLoading}
+                    sheetLoading={sheetLoading || isAuthInProgress}
                   />
                 )}
                 

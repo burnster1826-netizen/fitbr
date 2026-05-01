@@ -41,6 +41,49 @@ export async function syncDailyTotals(userId: string, dateStr: string, accessTok
   });
 }
 
+export async function findExistingSheet(accessToken: string, title: string = 'Daily Nutrition Tracker'): Promise<string | null> {
+  const query = `name = '${title}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
+  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    }
+  });
+
+  if (!response.ok) {
+    // If it's a 403 or 404, we might not have Drive search access or the scope is restricted
+    // but with drive.file we should at least see files we created.
+    return null;
+  }
+
+  const data = await response.json();
+  if (data.files && data.files.length > 0) {
+    return data.files[0].id;
+  }
+  
+  return null;
+}
+
+export async function checkSheetExists(accessToken: string, spreadsheetId: string): Promise<boolean> {
+  const url = `https://www.googleapis.com/drive/v3/files/${spreadsheetId}?fields=id,trashed`;
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      }
+    });
+
+    if (!response.ok) return false;
+    
+    const data = await response.json();
+    return !data.trashed;
+  } catch (err) {
+    return false;
+  }
+}
+
 export async function createNutritionSheet(accessToken: string): Promise<string> {
   const response = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
     method: 'POST',
@@ -69,23 +112,23 @@ export async function createNutritionSheet(accessToken: string): Promise<string>
                   values: [
                     { 
                       userEnteredValue: { stringValue: 'Date' },
-                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.1, blue: 0.1 }, horizontalAlignment: 'CENTER' }
+                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Calories' },
-                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.1, blue: 0.1 }, horizontalAlignment: 'CENTER' }
+                      userEnteredValue: { stringValue: 'Calories (Total)' },
+                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Protein (g)' },
-                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.1, blue: 0.1 }, horizontalAlignment: 'CENTER' }
+                      userEnteredValue: { stringValue: 'Protein (Total)' },
+                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Carbs (g)' },
-                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.1, blue: 0.1 }, horizontalAlignment: 'CENTER' }
+                      userEnteredValue: { stringValue: 'Carbs (Total)' },
+                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     },
                     { 
-                      userEnteredValue: { stringValue: 'Fats (g)' },
-                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.1, blue: 0.1 }, horizontalAlignment: 'CENTER' }
+                      userEnteredValue: { stringValue: 'Fats (Total)' },
+                      userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.9, green: 0.9, blue: 0.9 }, horizontalAlignment: 'CENTER' }
                     }
                   ]
                 }
