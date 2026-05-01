@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
 if (!apiKey) {
-  console.warn("GEMINI_API_KEY is not defined. AI features will not work.");
+  console.warn("GEMINI_API_KEY / VITE_GEMINI_API_KEY is not defined. AI features will not work. Ensure the key is set in your deployment environment variables and the site is rebuilt.");
 }
 const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' });
 

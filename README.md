@@ -17,12 +17,13 @@ A high-performance, AI-powered nutritional tracking application built with React
 - **AI Engine**: Google Gemini AI (Pro & Flash models)
 - **Automation**: Google Sheets API
 
-## Deployment Guidelines
+## Deployment Guidelines (e.g. Netlify)
 
-### Environment Variables
+### 1. GitHub Connection
+Push your code to a GitHub repository.
 
-To run this project outside of AI Studio (e.g., on Netlify or Vercel), you must configure the following environment variables:
-
+### 2. Environment Variables
+In the Netlify dashboard (Site Settings > Build & Deploy > Environment), add the following variables:
 - `GEMINI_API_KEY`: Your Google AI SDK key.
 - `VITE_FIREBASE_API_KEY`: Firebase Web API Key.
 - `VITE_FIREBASE_AUTH_DOMAIN`: Firebase Auth Domain.
@@ -31,6 +32,9 @@ To run this project outside of AI Studio (e.g., on Netlify or Vercel), you must 
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`: Firebase Messaging Sender ID.
 - `VITE_FIREBASE_APP_ID`: Firebase App ID.
 - `VITE_FIREBASE_DATABASE_ID`: (Optional) The Firestore database ID (defaults to `(default)`).
+
+### 3. Deploy
+Trigger a new deploy on Netlify. Static sites require a **build** to bake these variables into the JavaScript bundle. AI features will not work until the `GEMINI_API_KEY` is correctly provided and the site is rebuilt.
 
 ### Local Development
 

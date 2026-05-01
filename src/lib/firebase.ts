@@ -15,18 +15,23 @@ const firebaseAppConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)'
 };
 
-// If API key is missing from env vars, try to load from the AI Studio generated config
-if (!firebaseAppConfig.apiKey) {
-  try {
-    // Using a dynamic import so it doesn't fail the build if the file is missing
-    const config = await import('../../firebase-applet-config.json');
-    Object.assign(firebaseAppConfig, config.default || config);
-  } catch (e) {
-    console.warn("Firebase config not found in environment or local file. Please set VITE_FIREBASE_* env vars.");
+// Initialization function to handle potential missing local config
+async function initializeFirebase() {
+  // If API key is missing from env vars, try to load from the AI Studio generated config
+  if (!firebaseAppConfig.apiKey) {
+    try {
+      // Using a dynamic import so it doesn't fail the build if the file is missing
+      // @ts-ignore
+      const config = await import('../../firebase-applet-config.json');
+      Object.assign(firebaseAppConfig, config.default || config);
+    } catch (e) {
+      console.warn("Firebase config not found in environment or local file. Please set VITE_FIREBASE_* env vars.");
+    }
   }
+  return initializeApp(firebaseAppConfig);
 }
 
-const app = initializeApp(firebaseAppConfig);
+const app = await initializeFirebase();
 export const db = getFirestore(app, firebaseAppConfig.firestoreDatabaseId || '(default)');
 export const auth = getAuth(app);
 
