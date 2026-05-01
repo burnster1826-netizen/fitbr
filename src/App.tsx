@@ -489,6 +489,7 @@ export default function App() {
                 {activeTab === 'PROFILE' && (
                   <Profile 
                     profile={profile!}
+                    googleAccessToken={googleAccessToken}
                     onLogout={handleLogout}
                     onConnectDrive={handleConnectDrive}
                     onDisconnectDrive={handleDisconnectDrive}
