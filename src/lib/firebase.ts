@@ -1,12 +1,33 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
-
 import { doc, getDocFromServer } from 'firebase/firestore';
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Configure based on environment variables (best for automated deployments like Netlify)
+// Note: In Vite, we use import.meta.env.VITE_*
+const firebaseAppConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)'
+};
+
+// If API key is missing from env vars, try to load from the AI Studio generated config
+if (!firebaseAppConfig.apiKey) {
+  try {
+    // Using a dynamic import so it doesn't fail the build if the file is missing
+    const config = await import('../../firebase-applet-config.json');
+    Object.assign(firebaseAppConfig, config.default || config);
+  } catch (e) {
+    console.warn("Firebase config not found in environment or local file. Please set VITE_FIREBASE_* env vars.");
+  }
+}
+
+const app = initializeApp(firebaseAppConfig);
+export const db = getFirestore(app, firebaseAppConfig.firestoreDatabaseId || '(default)');
 export const auth = getAuth(app);
 
 // Test connection strictly as per guidelines
