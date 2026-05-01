@@ -15,12 +15,13 @@ interface DashboardProps {
   googleAccessToken: string | null;
   onConnectDrive: () => void;
   onProfileUpdate: (profile: UserProfile) => void;
+  showHistory: boolean;
+  setShowHistory: (show: boolean) => void;
 }
 
-export default function Dashboard({ profile, googleAccessToken, onConnectDrive, onProfileUpdate }: DashboardProps) {
+export default function Dashboard({ profile, googleAccessToken, onConnectDrive, onProfileUpdate, showHistory, setShowHistory }: DashboardProps) {
   const [logs, setLogs] = useState<FoodLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
   useEffect(() => {
@@ -179,13 +180,15 @@ export default function Dashboard({ profile, googleAccessToken, onConnectDrive, 
               </div>
               <h3 className="text-neutral-400 text-xs font-bold uppercase tracking-[0.2em]">Fuel Log History</h3>
             </div>
-            <button 
-              onClick={() => setShowHistory(true)}
-              className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#DFFF00] hover:text-black text-neutral-400 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
-            >
-              <HistoryIcon className="w-3 h-3" />
-              Archived
-            </button>
+            <div className="hidden lg:block">
+              <button 
+                onClick={() => setShowHistory(true)}
+                className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#DFFF00] hover:text-black text-neutral-400 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+              >
+                <HistoryIcon className="w-3 h-3" />
+                Archived
+              </button>
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">

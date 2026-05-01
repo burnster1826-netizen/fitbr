@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import Dashboard from './components/Dashboard';
 import UserNav from './components/UserNav';
 import ProfileModal from './components/ProfileModal';
+import { cn } from './lib/utils';
 
 export default function App() {
   const [user, loading, error] = useAuthState(auth);
@@ -25,6 +26,7 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [sheetLoading, setSheetLoading] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
 
@@ -116,6 +118,8 @@ export default function App() {
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
         setAuthError('Google Sign-In is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setAuthError(`This domain (${window.location.hostname}) is not authorized for Firebase Authentication. Please add it to the "Authorized domains" list in the Firebase Console (Authentication > Settings).`);
       } else {
         setAuthError(err.message);
       }
@@ -141,6 +145,8 @@ export default function App() {
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
         setAuthError('Google Sign-In is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setAuthError(`This domain (${window.location.hostname}) is not authorized for Firebase Authentication. Please add it to the "Authorized domains" list in the Firebase Console (Authentication > Settings).`);
       } else {
         setAuthError(err.message);
       }
@@ -159,6 +165,8 @@ export default function App() {
     } catch (err: any) {
       if (err.code === 'auth/operation-not-allowed') {
         setAuthError('Email/Password login is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setAuthError(`This domain (${window.location.hostname}) is not authorized for Firebase Authentication. Please add it to the "Authorized domains" list in the Firebase Console (Authentication > Settings).`);
       } else {
         setAuthError(err.message);
       }
@@ -176,7 +184,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#F5F5F5] font-sans selection:bg-[#DFFF00] selection:text-black flex flex-col md:flex-row relative overflow-hidden">
+    <div className="min-h-screen bg-[#050505] text-[#F5F5F5] font-sans selection:bg-[#DFFF00] selection:text-black flex flex-col lg:flex-row relative overflow-hidden">
       {/* Cinematic Scanning Line */}
       <motion.div 
         initial={{ top: '-5%' }}
@@ -185,7 +193,7 @@ export default function App() {
         className="fixed left-0 right-0 h-px bg-[#DFFF00]/5 z-0 pointer-events-none shadow-[0_0_10px_rgba(223,255,0,0.1)]"
       />
 
-      <aside className="hidden md:flex w-24 border-r border-white/5 flex-col items-center py-10 gap-12 bg-[#080808] shrink-0 sticky top-0 h-screen z-10">
+      <aside className="hidden lg:flex w-24 border-r border-white/5 flex-col items-center py-10 gap-12 bg-[#080808] shrink-0 sticky top-0 h-screen z-10">
         <motion.div 
           whileHover={{ rotate: 180 }}
           transition={{ duration: 0.5 }}
@@ -215,25 +223,55 @@ export default function App() {
 
       {/* Bottom Navigation for Mobile */}
       {user && profile && (
-        <nav className="md:hidden fixed bottom-6 left-6 right-6 h-16 bg-[#080808]/90 backdrop-blur-xl border border-white/10 rounded-2xl z-50 flex items-center justify-around px-4 shadow-2xl">
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 bg-[#080808]/90 backdrop-blur-2xl border border-white/10 rounded-[2rem] z-50 flex items-center justify-around px-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <button 
-            className="flex flex-col items-center gap-1 text-[#DFFF00]"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95"
+            onClick={() => { setShowHistory(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[8px] font-bold uppercase tracking-widest">Feed</span>
+            {!showHistory && (
+              <motion.div 
+                layoutId="active-tab"
+                className="absolute inset-x-2 inset-y-2 bg-[#DFFF00]/10 rounded-2xl -z-10"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <LayoutDashboard className={cn("w-5 h-5 transition-colors", !showHistory ? "text-[#DFFF00]" : "text-neutral-500")} />
+            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", !showHistory ? "text-[#DFFF00]" : "text-neutral-500")}>Feed</span>
           </button>
+          
           <button 
-            className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors"
+            className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95"
+            onClick={() => { setShowHistory(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          >
+            {showHistory && (
+              <motion.div 
+                layoutId="active-tab"
+                className="absolute inset-x-2 inset-y-2 bg-[#DFFF00]/10 rounded-2xl -z-10"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <History className={cn("w-5 h-5 transition-colors", showHistory ? "text-[#DFFF00]" : "text-neutral-500")} />
+            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", showHistory ? "text-[#DFFF00]" : "text-neutral-500")}>History</span>
+          </button>
+
+          <button 
+            className="relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95"
             onClick={() => setIsProfileModalOpen(true)}
           >
-            <User className="w-5 h-5" />
-            <span className="text-[8px] font-bold uppercase tracking-widest">Profile</span>
+            {isProfileModalOpen && (
+              <motion.div 
+                layoutId="active-tab"
+                className="absolute inset-x-2 inset-y-2 bg-white/5 rounded-2xl -z-10"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <User className={cn("w-5 h-5 transition-colors", isProfileModalOpen ? "text-white" : "text-neutral-500")} />
+            <span className={cn("text-[9px] font-bold uppercase tracking-tight transition-colors", isProfileModalOpen ? "text-white" : "text-neutral-500")}>Profile</span>
           </button>
         </nav>
       )}
 
-      <div className="flex-1 flex flex-col relative z-10 pb-24 md:pb-0">
+      <div className="flex-1 flex flex-col relative z-10 pb-24 lg:pb-0">
         <header className="p-6 md:px-12 md:pt-12">
           <div className="max-w-6xl mx-auto flex justify-between items-end">
             <motion.div
@@ -251,7 +289,7 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-4"
+                className="hidden lg:flex items-center gap-4"
               >
                 <UserNav 
                   profile={profile} 
@@ -414,6 +452,8 @@ export default function App() {
                   googleAccessToken={googleAccessToken}
                   onConnectDrive={handleConnectDrive}
                   onProfileUpdate={(p) => setProfile(p)}
+                  showHistory={showHistory}
+                  setShowHistory={setShowHistory}
                 />
                 
                 <ProfileModal 
