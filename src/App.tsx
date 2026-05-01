@@ -114,7 +114,11 @@ export default function App() {
         setGoogleAccessToken(credential.accessToken);
       }
     } catch (err: any) {
-      setAuthError(err.message);
+      if (err.code === 'auth/operation-not-allowed') {
+        setAuthError('Google Sign-In is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
+      } else {
+        setAuthError(err.message);
+      }
     }
   };
 
@@ -135,7 +139,11 @@ export default function App() {
         }
       }
     } catch (err: any) {
-      setAuthError(err.message);
+      if (err.code === 'auth/operation-not-allowed') {
+        setAuthError('Google Sign-In is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
+      } else {
+        setAuthError(err.message);
+      }
     }
   };
 
@@ -149,7 +157,11 @@ export default function App() {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
-      setAuthError(err.message);
+      if (err.code === 'auth/operation-not-allowed') {
+        setAuthError('Email/Password login is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.');
+      } else {
+        setAuthError(err.message);
+      }
     }
   };
 
